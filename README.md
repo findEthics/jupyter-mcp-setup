@@ -11,7 +11,7 @@ This tool provides a streamlined way to set up and manage Jupyter MCP servers th
 ### Recommended: Install as Python Package
 
 ```bash
-pip install jupyter-mcp-setup
+pip install git+https://github.com/findEthics/jupyter-mcp-setup.git
 ```
 
 This installs the tool globally and provides a clean `jupyter-mcp-setup` command without cluttering your project directories.
