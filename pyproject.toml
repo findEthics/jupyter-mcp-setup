@@ -1,0 +1,94 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyter-mcp-setup"
+version = "1.0.0"
+authors = [
+    {name = "Jupyter MCP Setup Team"},
+]
+description = "Unified setup tool for Jupyter MCP servers with Claude Code integration"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Installation/Setup",
+]
+dependencies = [
+    "jupyter-kernel-client>=0.7.3",
+    "jupyter-nbmodel-client>=0.13.5",
+    "mcp[cli]>=1.10.1",
+    "pydantic",
+    "uvicorn",
+    "click>=8.0",
+    "fastapi",
+    "ipykernel",
+    "jupyter_server>=1.6,<3",
+    "jupyterlab==4.4.1",
+    "jupyter-collaboration==4.0.2",
+    "datalayer_pycrdt==0.12.17",
+    "jupyter_mcp_server",
+    "psutil>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio",
+    "black",
+    "isort",
+    "mypy",
+]
+
+[project.urls]
+Homepage = "https://github.com/jupyter-mcp-setup/jupyter-mcp-setup"
+Documentation = "https://github.com/jupyter-mcp-setup/jupyter-mcp-setup#readme"
+Repository = "https://github.com/jupyter-mcp-setup/jupyter-mcp-setup.git"
+Issues = "https://github.com/jupyter-mcp-setup/jupyter-mcp-setup/issues"
+
+[project.scripts]
+jupyter-mcp-setup = "jupyter_mcp_setup.cli:main"
+
+[tool.hatch.version]
+path = "src/jupyter_mcp_setup/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jupyter_mcp_setup"]
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
