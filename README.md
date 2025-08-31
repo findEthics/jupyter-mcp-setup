@@ -43,7 +43,8 @@ jupyter-mcp-setup notebook.ipynb --verbose
 
 - **One-Command Setup**: Automatically handles installation, validation, and server startup
 - **Smart Detection**: Skips installation if environment already exists and is valid
-- **Claude Code Integration**: Automatically configures Claude Code settings
+- **Multi-Client Support**: Integrates with Claude Code and Gemini CLI
+- **Dynamic Configuration**: Preserves existing MCP server configurations
 - **Flexible Configuration**: Supports extensive customization options
 - **Cross-Platform**: Works on macOS, Linux, and Windows
 - **Clean Installation**: No directory clutter when installed via pip
@@ -51,13 +52,14 @@ jupyter-mcp-setup notebook.ipynb --verbose
 ## Command Options
 
 ### Core Options
-- `--port`, `-p`: Custom port for Jupyter Lab (default: auto-select)
+- `--port`, `-p`: Custom port for Jupyter Lab (default: 8888)
 - `--token`, `-t`: Custom token for Jupyter Lab (default: auto-generate)
 - `--verbose`, `-v`: Enable verbose logging
 - `--output-dir`, `-o`: Directory for configuration files (default: current directory)
 
-### Claude Integration
+### Client Integration
 - `--claude-config` / `--no-claude-config`: Enable/disable Claude Code configuration (default: enabled)
+- `--gemini-cli` / `--no-gemini-cli`: Enable/disable Gemini CLI configuration (default: disabled)
 
 ### Advanced Options
 - `--port-detection-timeout`: Port detection timeout in seconds (default: 30)
@@ -79,6 +81,12 @@ jupyter-mcp-setup my-notebook.ipynb
 ```bash
 # Development setup with verbose logging and specific port
 jupyter-mcp-setup notebook.ipynb --port 8889 --verbose --claude-config
+
+# Enable Gemini CLI integration
+jupyter-mcp-setup notebook.ipynb --gemini-cli --verbose
+
+# Enable both Claude Code and Gemini CLI
+jupyter-mcp-setup notebook.ipynb --claude-config --gemini-cli --port 8889
 ```
 
 ### Advanced Configuration
@@ -104,14 +112,16 @@ jupyter-mcp-setup notebook.ipynb --force-reinstall --skip-validation
 3. **Server Setup Phase**: 
    - Starts Jupyter Lab
    - Starts MCP server with proper environment
-   - Generates `.mcp.json` configuration
+   - Generates/updates `.mcp.json` configuration (preserves existing servers)
    - Updates Claude Code settings (if enabled)
+   - Updates Gemini CLI settings (if enabled)
    - Monitors processes
 
 ## Configuration Files Generated
 
-- `.mcp.json`: MCP client configuration with server details
+- `.mcp.json`: MCP client configuration with server details (dynamically preserves existing servers)
 - `.claude/settings.local.json`: Claude Code specific settings (when `--claude-config` is used)
+- `~/.gemini/settings.json`: Gemini CLI specific settings (when `--gemini-cli` is used)
 
 ## Requirements
 

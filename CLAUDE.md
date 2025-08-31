@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Jupyter MCP (Model Context Protocol) Server setup project that creates a bridge between Jupyter notebooks and MCP clients like Claude Code. The project has a multi-phase setup process and includes automated installation, validation, and runtime management scripts.
+This is a Jupyter MCP (Model Context Protocol) Server setup project that creates a bridge between Jupyter notebooks and MCP clients like Claude Code and Gemini CLI. The project has a multi-phase setup process and includes automated installation, validation, and runtime management scripts.
 
 ## Key Commands
 
@@ -16,11 +16,17 @@ pip install jupyter-mcp-setup
 # Basic usage - one command does everything: install, validate, and start server
 jupyter-mcp-setup notebook.ipynb
 
-# With specific port
+# With specific port (default is now 8888)
 jupyter-mcp-setup notebook.ipynb --port 8889
 
-# With verbose logging and custom configuration
+# With Claude Code integration (default enabled)
 jupyter-mcp-setup notebook.ipynb --verbose --claude-config --port-detection-timeout 15
+
+# With Gemini CLI integration
+jupyter-mcp-setup notebook.ipynb --gemini-cli --verbose
+
+# With both Claude Code and Gemini CLI integration
+jupyter-mcp-setup notebook.ipynb --claude-config --gemini-cli --port 8889
 
 # Force reinstall and skip validation
 jupyter-mcp-setup notebook.ipynb --force-reinstall --skip-validation --port 8889
@@ -95,6 +101,8 @@ jupyter-mcp-server start --help
 
 - **PathManager**: Comprehensive path validation and resolution for notebooks, handles relative/absolute paths, validates JSON format
 - **ClaudeConfigManager**: Manages Claude Code `.claude/settings.local.json` integration, preserves existing settings
+- **GeminiConfigManager**: Manages Gemini CLI `~/.gemini/settings.json` integration, preserves existing settings
+- **McpConfigManager**: Manages `.mcp.json` with dynamic editing that preserves existing MCP servers
 - **EnvironmentManager**: Advanced environment variable management and validation for MCP server configuration  
 - **JupyterMCPSetup**: Main orchestrator class that coordinates all setup phases
 
@@ -103,13 +111,14 @@ jupyter-mcp-server start --help
 1. **Prerequisites Validation**: Checks Phase 2 installation, virtual environment, notebook validity
 2. **Jupyter Lab Startup**: Starts Jupyter with port auto-detection, token extraction, handles port 0 scenarios
 3. **MCP Server Startup**: Starts the MCP server with validated environment variables
-4. **Configuration Generation**: Creates `.mcp.json` and optionally updates Claude Code settings
+4. **Configuration Generation**: Creates/updates `.mcp.json` (preserves existing servers) and optionally updates Claude Code and Gemini CLI settings
 5. **Process Monitoring**: Monitors both processes with graceful shutdown handling
 
 ### Configuration Files Generated
 
-- `.mcp.json` - MCP client configuration with server details
+- `.mcp.json` - MCP client configuration with server details (dynamically preserves existing servers)
 - `.claude/settings.local.json` - Claude Code specific settings (when `--claude-config` is used)
+- `~/.gemini/settings.json` - Gemini CLI specific settings (when `--gemini-cli` is used)
 - Configuration includes dynamic Jupyter URL, token, and environment variables
 
 ### Port Detection Features
@@ -177,7 +186,8 @@ jupyter-mcp/
 ### Features
 - Extensive configuration options for different deployment scenarios
 - Robust error handling and process cleanup
-- Claude Code integration enabled by default (can be disabled)
+- Multi-client support: Claude Code integration (enabled by default) and Gemini CLI integration (optional)
+- Dynamic configuration preservation: preserves existing MCP server configurations
 - Supports notebooks in various path configurations (current dir, subdirectories, absolute paths)
 - Cross-platform compatibility
 - Standard Python packaging practices

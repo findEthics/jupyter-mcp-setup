@@ -26,6 +26,7 @@ from .utils import setup_logging, log_success, log_phase, SetupError
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 @click.option('--no-cleanup', is_flag=True, help="Don't clean up configuration files on exit")
 @click.option('--claude-config/--no-claude-config', default=True, help='Enable/disable Claude Code configuration (default: enabled)')
+@click.option('--gemini-cli/--no-gemini-cli', default=False, help='Enable/disable Gemini CLI configuration (default: disabled)')
 @click.option('--port-detection-timeout', type=int, default=30, help='Timeout for port detection in seconds (default: 30)')
 @click.option('--max-port-retries', type=int, default=5, help='Maximum port detection retry attempts (default: 5)')
 @click.option('--fallback-port', type=int, help='Fallback port if auto-detection fails')
@@ -40,6 +41,7 @@ def main(
     verbose: bool,
     no_cleanup: bool,
     claude_config: bool,
+    gemini_cli: bool,
     port_detection_timeout: int,
     max_port_retries: int,
     fallback_port: Optional[int],
@@ -69,6 +71,10 @@ def main(
     jupyter-mcp-setup notebook.ipynb --verbose --claude-config --port-detection-timeout 15
     
     \b
+    # With Gemini CLI configuration instead of Claude Code
+    jupyter-mcp-setup notebook.ipynb --gemini-cli --no-claude-config
+    
+    \b
     # Force reinstall and skip validation
     jupyter-mcp-setup notebook.ipynb --force-reinstall --skip-validation --port 8889
     
@@ -90,6 +96,7 @@ def main(
         logger.info(f"Token: {'custom' if token else 'auto-generate'}")
         logger.info(f"Output directory: {output_dir}")
         logger.info(f"Claude config: {claude_config}")
+        logger.info(f"Gemini CLI config: {gemini_cli}")
         logger.info(f"Force reinstall: {force_reinstall}")
         logger.info(f"Skip validation: {skip_validation}")
     
@@ -116,6 +123,7 @@ def main(
             verbose=verbose,
             cleanup=not no_cleanup,
             claude_config=claude_config,
+            gemini_cli=gemini_cli,
             port_detection_timeout=port_detection_timeout,
             max_port_detection_attempts=max_port_retries,
             fallback_port=fallback_port,
@@ -196,6 +204,7 @@ def run_server_setup_phase(
     verbose: bool,
     cleanup: bool,
     claude_config: bool,
+    gemini_cli: bool,
     port_detection_timeout: int,
     max_port_detection_attempts: int,
     fallback_port: Optional[int],
@@ -213,6 +222,7 @@ def run_server_setup_phase(
             'verbose': verbose,
             'cleanup': cleanup,
             'claude_config': claude_config,
+            'gemini_cli': gemini_cli,
             'port_detection_timeout': port_detection_timeout,
             'max_port_detection_attempts': max_port_detection_attempts,
             'fallback_port': fallback_port,
@@ -299,6 +309,7 @@ def validate(verbose: bool):
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 @click.option('--no-cleanup', is_flag=True, help="Don't clean up configuration files on exit")
 @click.option('--claude-config/--no-claude-config', default=True, help='Enable/disable Claude Code configuration')
+@click.option('--gemini-cli/--no-gemini-cli', default=False, help='Enable/disable Gemini CLI configuration')
 @click.option('--port-detection-timeout', type=int, default=30, help='Port detection timeout')
 @click.option('--max-port-retries', type=int, default=5, help='Max port detection retries')
 @click.option('--fallback-port', type=int, help='Fallback port')
@@ -310,6 +321,7 @@ def server(
     verbose: bool,
     no_cleanup: bool,
     claude_config: bool,
+    gemini_cli: bool,
     port_detection_timeout: int,
     max_port_retries: int,
     fallback_port: Optional[int]
@@ -325,6 +337,7 @@ def server(
             'verbose': verbose,
             'cleanup': not no_cleanup,
             'claude_config': claude_config,
+            'gemini_cli': gemini_cli,
             'port_detection_timeout': port_detection_timeout,
             'max_port_detection_attempts': max_port_retries,
             'fallback_port': fallback_port,

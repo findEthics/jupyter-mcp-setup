@@ -172,6 +172,171 @@ class ClaudeConfigManager:
             return False
 
 
+class GeminiConfigManager:
+    """Gemini CLI specific configuration management."""
+    
+    def __init__(self, path_manager: PathManager, logger=None):
+        self.path_manager = path_manager
+        self.logger = logger or setup_logging()
+    
+    def get_gemini_config_path(self) -> Path:
+        """Get the path to Gemini CLI settings file."""
+        gemini_config = Path.home() / ".gemini" / "settings.json"
+        return gemini_config
+    
+    def ensure_gemini_directory(self) -> bool:
+        """Ensure ~/.gemini directory exists with proper permissions."""
+        try:
+            gemini_dir = Path.home() / ".gemini"
+            gemini_dir.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"✓ Gemini directory ready: {gemini_dir}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to create Gemini directory: {e}")
+            return False
+    
+    def load_existing_gemini_settings(self) -> Dict[str, Any]:
+        """Load existing Gemini settings, preserving all current configuration."""
+        gemini_config_path = self.get_gemini_config_path()
+        
+        if not gemini_config_path.exists():
+            self.logger.debug("No existing Gemini settings found, starting fresh")
+            return {}
+        
+        try:
+            with open(gemini_config_path, 'r') as f:
+                settings = json.load(f)
+            self.logger.debug(f"✓ Loaded existing Gemini settings from {gemini_config_path}")
+            return settings
+        except json.JSONDecodeError as e:
+            self.logger.warning(f"Invalid JSON in Gemini settings, starting fresh: {e}")
+            return {}
+        except Exception as e:
+            self.logger.error(f"Error loading Gemini settings: {e}")
+            return {}
+    
+    def update_mcp_servers(self, server_name: str, server_config: Dict[str, Any], 
+                          existing_settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Add/update server in mcpServers object, preserving existing settings."""
+        # Ensure mcpServers exists
+        if "mcpServers" not in existing_settings:
+            existing_settings["mcpServers"] = {}
+        
+        # Add/update server configuration
+        existing_settings["mcpServers"][server_name] = server_config
+        self.logger.debug(f"✓ Added/updated '{server_name}' in mcpServers")
+        
+        return existing_settings
+    
+    def create_server_config(self, env_vars: Dict[str, str]) -> Dict[str, Any]:
+        """Create Gemini CLI server configuration with stdio transport."""
+        import sys
+        
+        config = {
+            "command": sys.executable,
+            "args": ["-m", "jupyter_mcp_server"],
+            "env": env_vars
+        }
+        
+        return config
+    
+    def generate_gemini_settings(self, server_name: str = "jupyter", 
+                                env_vars: Optional[Dict[str, str]] = None) -> bool:
+        """Generate Gemini CLI specific settings, preserving existing configuration."""
+        try:
+            if not env_vars:
+                self.logger.error("Environment variables required for Gemini settings")
+                return False
+            
+            # Ensure directory exists first
+            if not self.ensure_gemini_directory():
+                return False
+            
+            # Load existing settings
+            settings = self.load_existing_gemini_settings()
+            
+            # Create server configuration
+            server_config = self.create_server_config(env_vars)
+            
+            # Update with MCP server configuration
+            settings = self.update_mcp_servers(server_name, server_config, settings)
+            
+            # Write updated settings
+            gemini_config_path = self.get_gemini_config_path()
+            with open(gemini_config_path, 'w') as f:
+                json.dump(settings, f, indent=2)
+            
+            self.logger.info(f"✓ Gemini CLI settings updated: {gemini_config_path}")
+            self.logger.debug(f"  MCP servers: {list(settings.get('mcpServers', {}).keys())}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to generate Gemini settings: {e}")
+            return False
+
+
+class McpConfigManager:
+    """Generic .mcp.json configuration management with dynamic editing."""
+    
+    def __init__(self, mcp_config_path: Path, logger=None):
+        self.mcp_config_path = mcp_config_path
+        self.logger = logger or setup_logging()
+    
+    def load_existing_mcp_settings(self) -> Dict[str, Any]:
+        """Load existing .mcp.json settings, preserving all current configuration."""
+        if not self.mcp_config_path.exists():
+            self.logger.debug("No existing .mcp.json found, starting fresh")
+            return {}
+        
+        try:
+            with open(self.mcp_config_path, 'r') as f:
+                settings = json.load(f)
+            self.logger.debug(f"✓ Loaded existing .mcp.json from {self.mcp_config_path}")
+            return settings
+        except json.JSONDecodeError as e:
+            self.logger.warning(f"Invalid JSON in .mcp.json, starting fresh: {e}")
+            return {}
+        except Exception as e:
+            self.logger.error(f"Error loading .mcp.json: {e}")
+            return {}
+    
+    def update_mcp_servers(self, server_name: str, server_config: Dict[str, Any], 
+                          existing_settings: Dict[str, Any]) -> Dict[str, Any]:
+        """Add/update server in mcpServers object, preserving ALL existing settings."""
+        # Ensure mcpServers exists (create if missing)
+        if "mcpServers" not in existing_settings:
+            existing_settings["mcpServers"] = {}
+        
+        # Add/replace the specific server (jupyter)
+        existing_settings["mcpServers"][server_name] = server_config
+        self.logger.debug(f"✓ Added/updated '{server_name}' in .mcp.json mcpServers")
+        
+        return existing_settings
+    
+    def generate_mcp_settings(self, server_name: str, server_config: Dict[str, Any]) -> bool:
+        """Generate .mcp.json with dynamic preservation of existing servers."""
+        try:
+            # Load existing settings (preserves everything)
+            settings = self.load_existing_mcp_settings()
+            
+            # Update with new server configuration (dynamic merge)
+            settings = self.update_mcp_servers(server_name, server_config, settings)
+            
+            # Write updated settings
+            with open(self.mcp_config_path, 'w') as f:
+                json.dump(settings, f, indent=2)
+            
+            self.logger.info(f"✓ .mcp.json updated: {self.mcp_config_path}")
+            self.logger.debug(f"  MCP servers: {list(settings.get('mcpServers', {}).keys())}")
+            
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to generate .mcp.json: {e}")
+            return False
+
+
 class EnvironmentManager:
     """Advanced environment variable management for MCP server configuration."""
     
@@ -263,6 +428,9 @@ class JupyterMCPServerSetup:
         # Claude integration options
         self.claude_config = kwargs.get('claude_config', True)  # Default: enabled
         
+        # Gemini CLI integration options
+        self.gemini_cli = kwargs.get('gemini_cli', False)  # Default: disabled
+        
         # Port detection configuration options
         self.port_detection_timeout = kwargs.get('port_detection_timeout', 30)
         self.max_port_detection_attempts = kwargs.get('max_port_detection_attempts', 5)
@@ -278,11 +446,14 @@ class JupyterMCPServerSetup:
         self.path_manager = PathManager(self.project_dir, self.logger)
         self.env_manager = EnvironmentManager(self.logger)
         self.claude_manager = ClaudeConfigManager(self.path_manager, self.logger)
+        self.gemini_manager = GeminiConfigManager(self.path_manager, self.logger)
         
         # Enhanced path resolution using PathManager
         try:
             self.notebook_path = self.path_manager.validate_and_resolve_notebook_path(notebook_path)
             self.mcp_config_path, self.settings_config_path = self.path_manager.resolve_configuration_paths(self.output_dir)
+            # Initialize MCP manager after path resolution
+            self.mcp_manager = McpConfigManager(self.mcp_config_path, self.logger)
         except Exception as e:
             self.logger.error(f"Path validation failed: {e}")
             raise ServerSetupError(f"Path validation failed: {e}")
@@ -317,11 +488,11 @@ class JupyterMCPServerSetup:
         # Build Jupyter Lab command
         jupyter_cmd = [str(venv_python), "-m", "jupyter", "lab"]
         
-        # Add custom port if specified
+        # Add custom port if specified, otherwise default to 8888
         if self.custom_port:
             jupyter_cmd.extend(["--port", str(self.custom_port)])
         else:
-            jupyter_cmd.extend(["--port", "0"])  # Let Jupyter choose available port
+            jupyter_cmd.extend(["--port", "8888"])  # Default to port 8888
         
         # Add custom token if specified
         if self.custom_token:
@@ -479,6 +650,22 @@ class JupyterMCPServerSetup:
                 else:
                     self.logger.warning("Claude configuration generation failed, but continuing...")
             
+            # Generate Gemini CLI specific configuration
+            if self.gemini_cli:
+                # Get the same environment variables used for .mcp.json
+                document_id = self.path_manager.get_relative_path_for_document_id(self.notebook_path)
+                env_vars = self.env_manager.create_jupyter_environment(
+                    jupyter_url=self.jupyter_url,
+                    jupyter_token=self.jupyter_token,
+                    notebook_path=document_id
+                )
+                
+                gemini_success = self.gemini_manager.generate_gemini_settings("jupyter", env_vars)
+                if gemini_success:
+                    self.logger.info(f"  Gemini CLI config: {self.gemini_manager.get_gemini_config_path()}")
+                else:
+                    self.logger.warning("Gemini CLI configuration generation failed, but continuing...")
+            
             self.logger.info("✓ Configuration files generated successfully")
             self.logger.info(f"  MCP config: {self.mcp_config_path}")
             
@@ -488,7 +675,7 @@ class JupyterMCPServerSetup:
             raise ServerSetupError(f"Failed to generate configurations: {e}")
     
     def _generate_mcp_config(self):
-        """Generate .mcp.json configuration file."""
+        """Generate .mcp.json configuration file with dynamic preservation."""
         # Get paths and environment variables
         document_id = self.path_manager.get_relative_path_for_document_id(self.notebook_path)
         env_vars = self.env_manager.create_jupyter_environment(
@@ -497,18 +684,15 @@ class JupyterMCPServerSetup:
             notebook_path=document_id
         )
         
-        config = {
-            "mcpServers": {
-                "jupyter": {
-                    "command": sys.executable,
-                    "args": ["-m", "jupyter_mcp_server"],
-                    "env": env_vars
-                }
-            }
+        # Create server configuration
+        server_config = {
+            "command": sys.executable,
+            "args": ["-m", "jupyter_mcp_server"],
+            "env": env_vars
         }
         
-        with open(self.mcp_config_path, 'w') as f:
-            json.dump(config, f, indent=2)
+        # Use dynamic manager instead of overwriting
+        return self.mcp_manager.generate_mcp_settings("jupyter", server_config)
     
     def monitor_processes(self) -> bool:
         """Monitor running processes and handle failures."""
@@ -559,14 +743,8 @@ class JupyterMCPServerSetup:
             except Exception as e:
                 self.logger.error(f"Error stopping Jupyter Lab: {e}")
         
-        # Clean up configuration files if requested
-        if self.cleanup_on_exit:
-            try:
-                if self.mcp_config_path.exists():
-                    self.mcp_config_path.unlink()
-                    self.logger.info(f"✓ Cleaned up {self.mcp_config_path}")
-            except Exception as e:
-                self.logger.error(f"Error cleaning up configuration files: {e}")
+        # Configuration files are now preserved to maintain user's existing MCP servers
+        # Only process cleanup is performed
     
     def run(self) -> bool:
         """Main execution flow."""
